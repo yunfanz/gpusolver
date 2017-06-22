@@ -38,5 +38,5 @@ Performance suggestions:
 | size\sparsity        | Sparsity>0.5  | Sparsity<0.5|
 | -------------       |:-------------:| -----:|
 | small A     | Compare cpu vs. from_csr |Compare cpu vs. from_dense |
-| large nrows>>ncols     | from_csr, solve| AtA on cpu, solve_Axb  |
+| large nrows>>ncols     | from_csr, solve<------|------> AtA on cpu, solve_Axb  |
 | large A | from_csr |  from_csr vs. from_dense |
