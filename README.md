@@ -35,8 +35,8 @@ Sample usage is given in unit_test.py
 
 Performance suggestions:
 
-| size\sparcity        | Very Sparse  | Somewhat Sparse|
+| size\sparsity        | Sparsity>0.5  | Sparsity<0.5|
 | -------------       |:-------------:| -----:|
-| small A     | Compare cpu vs. from_csr |Compare cpu vs. from_csr vs. from_dense |
+| small A     | Compare cpu vs. from_csr |Compare cpu vs. from_dense |
 | large nrows>>ncols     | from_csr, solve| AtA on cpu, solve_Axb  |
-| large A | from_csr |   from_csr vs. from_dense |
+| large A | from_csr |  from_csr vs. from_dense |
