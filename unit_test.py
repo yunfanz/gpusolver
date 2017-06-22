@@ -49,5 +49,7 @@ for i in xrange(4):
 	solver.solve(i)
 	x = solver.retrieve()
 	print x
-x_np = np.dot(np.linalg,pinv(np.dot(m2.T,m2)), np.dot(m2.T,b2))
+x_np = np.dot(np.linalg.pinv(np.dot(m2.T,m2)), np.dot(m2.T,b2))
+print "Residual for x:", np.sum((np.dot(m2,x)-b2)**2)/np.sum(b2**2)
+print "Residual for x_np:", np.sum((np.dot(m2,x_np)-b2)**2)/np.sum(b2**2)
 print "x_np:", x_np
