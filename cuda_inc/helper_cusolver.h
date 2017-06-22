@@ -23,24 +23,24 @@
 
 #define SWITCH_CHAR             '-'
 
-void printMatrix(int m, int n, const double*A, int lda, const char* name) 
+void printMatrix(int m, int n, const float*A, int lda, const char* name) 
 {   
     printf("%s \n", name);
     for(int row = 0 ; row < m ; row++)
     {
         for(int col = 0 ; col < n ; col++)
         { 
-            double Areg = A[row + col*lda]; 
+            float Areg = A[row + col*lda]; 
             printf("%.3f ", Areg); 
             if (col == n-1) printf("\n") ;
         } 
     } 
 } 
-void checkMatrix(int m, int n, const double*A, int lda, const char* name)
+void checkMatrix(int m, int n, const float*A, int lda, const char* name)
 {
-    double* hA;
-    hA = (double*)malloc(sizeof(double)*m*n);
-    checkCudaErrors(cudaMemcpy(hA, A, sizeof(double)*m*n, cudaMemcpyDeviceToHost));
+    float* hA;
+    hA = (float*)malloc(sizeof(float)*m*n);
+    checkCudaErrors(cudaMemcpy(hA, A, sizeof(float)*m*n, cudaMemcpyDeviceToHost));
     printMatrix(m, n, hA, m, name);
     if (hA) free(hA);
 }
