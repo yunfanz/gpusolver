@@ -34,6 +34,8 @@ General structure of usage:
 Sample usage is given in unit_test.py
 
 Performance suggestions:
+GPU code performance is a balance of data transfer and kernel execution. This implementation does not overlap the two,
+so here's some guidelines in choosing what to use:
 
 | size\sparsity        | Sparsity>0.5  | Sparsity<0.5|
 | -------------       |:-------------:| -----:|
