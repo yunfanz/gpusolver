@@ -16,6 +16,8 @@ cd ./gpusolver
 python setup.py build_ext -i
 ```
 
+### Features
+
 Current features include:
 1. single precision float solver for 2 dimensional matrix and 1 dimensional right hand side
 2. Passing data in either dense or csr format
@@ -26,14 +28,15 @@ Features to be added:
 1. Complex solver
 2. Batched transfer
 
-General structure of usage:
+### General structure of usage:
 1. Initialize solver by calling ```solver = gpusolver.DnSolver(num_rows, num_cols)```
 2. Solve using either ```solver.solve(n) or solver.solve_Axb(n)```
 3. Retrieve the result ```x = solver.retrieve()```
 
 Sample usage is given in unit_test.py
 
-Performance suggestions:
+### Performance suggestions:
+
 GPU code performance is a balance of data transfer and kernel execution. This implementation does not overlap the two,
 so here's some guidelines in choosing what to use:
 
