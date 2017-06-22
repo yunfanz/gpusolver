@@ -2,6 +2,9 @@ import numpy as np
 import gpusolver
 from scipy.sparse import csr_matrix
 
+
+print "#################### gpusolver unit-test ##########################"
+print "Testing all functionalities with square array"
 m1 = np.array([[ 5.,  0.],
        [ 6., -1.]], dtype=np.float32)
 b1 = np.ones(2, dtype=np.float32)
@@ -28,7 +31,7 @@ for i in xrange(4):
 	print 'Absolute Error', np.hypot(*(x-np.array([0.2,0.2])))
 
 
-print "m2"
+print "Testing all functionalities with non-square array"
 m2 = np.array([[ 5.,  0.,  1.],
        [ 6., -1.,  4.],
        [ 3.,  0.,  0.],
@@ -38,12 +41,13 @@ m2 = np.array([[ 5.,  0.,  1.],
        [ 5., -1.,  7.]]).astype(np.float32)
 solver = gpusolver.DnSolver(np.int32(m2.shape[0]), np.int32(m2.shape[1]))
 
-m1csr = csr_matrix(m2)
+m2csr = csr_matrix(m2)
 b2 = np.ones(m2.shape[0], dtype=np.float32)
 #solver.from_dense(m2.flatten(order='F'), b2)
-solver.from_csr(m1csr.indptr, m1csr.indices, m1csr.data, b2)
+solver.from_csr(m2csr.indptr, m2csr.indices, m2csr.data, b2)
 for i in xrange(4):
 	solver.solve(i)
 	x = solver.retrieve()
 	print x
-import IPython; IPython.embed()
+x_np = np.dot(np.linalg,pinv(np.dot(m2.T,m2)), np.dot(m2.T,b2))
+print "x_np:", x_np
