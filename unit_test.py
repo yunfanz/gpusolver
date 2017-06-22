@@ -3,75 +3,86 @@ import gpusolver
 from scipy.sparse import csr_matrix
 
 
+def test_all(A, Axbonly=False):
+       b = np.ones(A.shape[0], dtype=np.float32)
+       #initialize with shape of array
+       solver = gpusolver.DnSolver(*A.shape)
+
+       #get numpy result:
+       x_np = np.dot(np.linalg.pinv(np.dot(A.T,A)), np.dot(A.T,b))
+
+       #pass flattened array to dense initializer 
+       solver.from_dense(A.flatten(order='F'), b)
+
+       #Solve AtAx=Atb using QR (0:QR, 1:cholesky, 2:LU, 3:SVD)
+       for i in xrange(3):
+              solver.solve(i)
+              #retrieve result to host
+              x = solver.retrieve()
+              print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+
+       if A.shape[0] == A.shape[1]:
+              #Solve Ax=b using QR
+              solver.solve_Axb(0)
+              x = solver.retrieve()
+              print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+
+       #testing constructor from csr
+       Acsr = csr_matrix(A)
+       solver.from_csr(Acsr.indptr, Acsr.indices, Acsr.data, b)
+       solver.solve(0)
+
+       #retrieve result to host
+       x = solver.retrieve()
+       print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+
+def test_Axb(A):
+       assert(A.shape[0] == A.shape[1])
+       b = np.ones(A.shape[0], dtype=np.float32)
+       #initialize with shape of array
+       solver = gpusolver.DnSolver(*A.shape)
+
+       #Solve AtAx=Atb using QR (0:QR, 1:cholesky, 2:LU, 3:SVD)
+       x_np = np.dot(np.linalg.pinv(np.dot(A.T,A)), np.dot(A.T,A))
+
+       #pass flattened array to dense initializer 
+       solver.from_dense(A.flatten(order='F'), b)
+
+       #Solve Ax=b using QR
+       solver.solve_Axb(0)
+       x = solver.retrieve()
+       print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+
+       #Solve Ax=b using QR
+       Acsr = csr_matrix(A)
+       solver.from_csr(Acsr.indptr, Acsr.indices, Acsr.data, b)
+       solver.solve_Axb(0)
+       x = solver.retrieve()
+       print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+
+
 print "#################### gpusolver unit-test ##########################"
 print "~~~Testing all functionalities with square array"
 m1 = np.array([[ 5.,  0.],
        [ 6., -1.]], dtype=np.float32)
-b1 = np.ones(2, dtype=np.float32)
-#initialize with shape of array
-solver = gpusolver.DnSolver(np.int32(m1.shape[0]), np.int32(m1.shape[0]))
-#pass flattened array to dense initializer 
-solver.from_dense(m1.flatten(order='F'), b1)
-#Solve AtAx=Atb using QR (0:QR, 1:cholesky, 2:LU, 3:SVD)
-solver.solve(0)
-#retrieve result to host
-x = solver.retrieve()
-print 'Absolute Error', np.hypot(*(x-np.array([0.2,0.2])))
-#Solve Ax=b using QR
-solver.solve_Axb(0)
-x = solver.retrieve()
-print 'Absolute Error', np.hypot(*(x-np.array([0.2,0.2])))
+test_all(m1)
 
-m1csr = csr_matrix(m1)
-#pass sparse matrix in csr format to constructor
-solver.from_csr(m1csr.indptr, m1csr.indices, m1csr.data, b1)
-for i in xrange(3):
-	solver.solve(i)
-	x = solver.retrieve()
-	print 'Absolute Error', np.hypot(*(x-np.array([0.2,0.2])))
-
-
-print "non-square array with solution"
+print "~~~non-square array with solution"
 m2 = np.array([[ 1.,  1.,  0.],
        [ 0.,  1.,  1.],
        [ 1.,  0.,  1.],
        [ 0.,  2.,  0.]], dtype=np.float32)
 
-solver = gpusolver.DnSolver(*m2.shape)
+test_all(m2)
 
-m2csr = csr_matrix(m2)
-b2 = np.ones(m2.shape[0], dtype=np.float32)
-#solver.from_dense(m2.flatten(order='F'), b2)
-solver.from_csr(m2csr.indptr, m2csr.indices, m2csr.data, b2)
-for i in xrange(1):
-	solver.solve(i)
-	x = solver.retrieve()
-	print x
-x_np = np.dot(np.linalg.pinv(np.dot(m2.T,m2)), np.dot(m2.T,b2))
-print "Residual for x:", np.sum((np.dot(m2,x)-b2)**2)/np.sum(b2**2)
-print "Residual for x_np:", np.sum((np.dot(m2,x_np)-b2)**2)/np.sum(b2**2)
-print "x_np:", x_np
-
-print "non-square array with solution, testing only solving"
+print "~~~non-square array with solution, testing only solving"
 m1 = m2
 m2 = np.dot(m1.T,m1)
-b2 = np.dot(m1.T,b2)
-solver = gpusolver.DnSolver(*m2.shape)
+b2 = np.dot(m1.T,np.ones(m1.shape[0], dtype=np.float32))
+test_Axb(m2)
 
-m2csr = csr_matrix(m2)
-b2 = np.ones(m2.shape[0], dtype=np.float32)
-#solver.from_dense(m2.flatten(order='F'), b2)
-solver.from_csr(m2csr.indptr, m2csr.indices, m2csr.data, b2)
-for i in xrange(3):
-       solver.solve_Axb(i)
-       x = solver.retrieve()
-       print x
-x_np = np.dot(np.linalg.pinv(m2), b2)
-print "Residual for x:", np.sum((np.dot(m2,x)-b2)**2)/np.sum(b2**2)
-print "Residual for x_np:", np.sum((np.dot(m2,x_np)-b2)**2)/np.sum(b2**2)
-print "x_np:", x_np
 
-print "non-square array without solution"
+print "~~~non-square array without solution"
 m2 = np.array([[ 5.,  0.,  1.],
        [ 6., -1.,  4.],
        [ 3.,  0.,  0.],
@@ -79,17 +90,4 @@ m2 = np.array([[ 5.,  0.,  1.],
        [ 0., -2.,  0.],
        [ 0.,  6.,  0.],
        [ 5., -1.,  7.]]).astype(np.float32)
-solver = gpusolver.DnSolver(np.int32(m2.shape[0]), np.int32(m2.shape[1]))
-
-m2csr = csr_matrix(m2)
-b2 = np.ones(m2.shape[0], dtype=np.float32)
-solver.from_dense(m2.flatten(order='F'), b2)
-#solver.from_csr(m2csr.indptr, m2csr.indices, m2csr.data, b2)
-for i in xrange(3):
-       solver.solve(i)
-       x = solver.retrieve()
-       print x
-x_np = np.dot(np.linalg.pinv(np.dot(m2.T,m2)), np.dot(m2.T,b2))
-print "Residual for x:", np.sum((np.dot(m2,x)-b2)**2)/np.sum(b2**2)
-print "Residual for x_np:", np.sum((np.dot(m2,x_np)-b2)**2)/np.sum(b2**2)
-print "x_np:", x_np
+test_all(m2)

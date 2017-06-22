@@ -390,7 +390,7 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
     baseA = h_csrRowPtrA[0];
     
     //memset(h_A, 0, sizeof(float)*lda*colsA);
-    printf("from_csr: converting to dense\n");
+    //printf("from_csr: converting to dense\n");
     for(int row = 0 ; row < rowsA ; row++)
     {
         const int start = h_csrRowPtrA[row  ]-baseA;
@@ -411,23 +411,25 @@ void DnSolver::solve(int Func) {
     cublasStatus_t cbstat;
     float al =1.0;// al =1
     float bet =0.0;// bet =0
-    //float* dAcopy;
     float* dAtA;
-    //checkCudaErrors(cudaMalloc(&dAcopy, sizeof(float)*lda*colsA));
     checkCudaErrors(cudaMalloc(&dAtA, sizeof(float)*colsA*colsA));
-    //checkCudaErrors(cudaMemcpy(dAcopy, d_A, sizeof(float)*lda*colsA, cudaMemcpyDeviceToDevice));
-    //cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,rowsA,rowsA,&al,d_A,colsA,d_A,rowsA,&bet,dAtA,colsA);
-    cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,colsA,rowsA,&al,d_A,rowsA,d_A,rowsA,&bet,dAtA,colsA);
 
+    cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,colsA,rowsA,&al,d_A,rowsA,d_A,rowsA,&bet,dAtA,colsA);
 
     // printf("step 7: compute At*b \n");
     float* d_Atb;
     checkCudaErrors(cudaMalloc((void **)&d_Atb, sizeof(float)*colsA));
-    cbstat = cublasSgemv(cublasHandle,CUBLAS_OP_T,colsA,rowsA,&al,d_A,rowsA,d_b,1,&bet,d_Atb,1);
+    cbstat = cublasSgemv(cublasHandle,CUBLAS_OP_T,rowsA,colsA,&al,d_A,rowsA,d_b,1,&bet,d_Atb,1);
 
-    if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
-    checkCudaErrors(cublasCreate(&cublasHandle));
-    checkCudaErrors(cublasSetStream(cublasHandle, stream));
+    //print out for debug
+    //checkMatrix(rowsA, colsA , d_A, lda, "A");
+    //checkMatrix(rowsA, 1 , d_b, rowsA, "b");
+    //checkMatrix(colsA, colsA , dAtA, lda, "AtA");
+    //checkMatrix(colsA, 1 , d_Atb, lda, "Atb");
+
+    //if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
+    //checkCudaErrors(cublasCreate(&cublasHandle));
+    //checkCudaErrors(cublasSetStream(cublasHandle, stream));
     //printf("step 8: solves AtA*x = At*b \n");
 
     if ( 0 == Func )
