@@ -416,13 +416,14 @@ void DnSolver::solve(int Func) {
     //checkCudaErrors(cudaMalloc(&dAcopy, sizeof(float)*lda*colsA));
     checkCudaErrors(cudaMalloc(&dAtA, sizeof(float)*colsA*colsA));
     //checkCudaErrors(cudaMemcpy(dAcopy, d_A, sizeof(float)*lda*colsA, cudaMemcpyDeviceToDevice));
-    //cbstat = cublasDgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,rowsA,rowsA,&al,d_A,colsA,d_A,rowsA,&bet,dAtA,colsA);
+    //cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,rowsA,rowsA,&al,d_A,colsA,d_A,rowsA,&bet,dAtA,colsA);
     cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,colsA,rowsA,&al,d_A,rowsA,d_A,rowsA,&bet,dAtA,colsA);
+
 
     // printf("step 7: compute At*b \n");
     float* d_Atb;
     checkCudaErrors(cudaMalloc((void **)&d_Atb, sizeof(float)*colsA));
-    cbstat = cublasSgemv(cublasHandle,CUBLAS_OP_T,colsA,colsA,&al,d_A,colsA,d_b,1,&bet,d_Atb,1);
+    cbstat = cublasSgemv(cublasHandle,CUBLAS_OP_T,colsA,rowsA,&al,d_A,rowsA,d_b,1,&bet,d_Atb,1);
 
     if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
     checkCudaErrors(cublasCreate(&cublasHandle));
