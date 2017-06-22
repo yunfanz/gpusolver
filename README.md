@@ -6,7 +6,7 @@ This is a general purpose linear solver based on CUDA libraries with python API.
 Requirements:
 ```
 CUDA8.0 (cublas, cudart, cusparse, cusolver)
-python2.7( numpy, scipy)
+python2.7( numpy, scipy, cython)
 ```
 
 To begin navigate to a directory:
@@ -32,3 +32,11 @@ General structure of usage:
 3. Retrieve the result ```x = solver.retrieve()```
 
 Sample usage is given in unit_test.py
+
+Performance suggestions:
+
+| size\sparcity        | Very Sparse  | Somewhat Sparse|
+| -------------       |:-------------:| -----:|
+| small A     | Compare cpu vs. from_csr |Compare cpu vs. from_csr vs. from_dense |
+| large nrows>>ncols     | from_csr, solve| AtA on cpu, solve_Axb  |
+| large A | from_csr |   from_csr vs. from_dense |
