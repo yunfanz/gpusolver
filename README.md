@@ -21,6 +21,7 @@ Current features include:
 2. Passing data in either dense or csr format
 3. AtAx=Atb solver for general/non-square matrix A; Ax=b solver for square matrices
 4. Four options of kernel backends (0:QR decomposition, 1:Cholesky decomposition, 2:LU, 3:SVD)
+
 Features to be added:
 1. Complex solver
 2. Batched transfer
