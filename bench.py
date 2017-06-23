@@ -3,7 +3,7 @@ import gpusolver
 import itertools, time
 from scipy.sparse import csr_matrix
 
-nfreqs = np.arange(11,21,2)
+nfreqs = np.arange(1,15,2)
 nants = 350
 
 T_transfer, T_compute, Asize = [], [], []
@@ -28,7 +28,7 @@ for nfq in nfreqs[::-1]:
 	t0 = time.time()
 	solver.from_csr(Acsr.indptr, Acsr.indices, Acsr.data, b)
 	t1 = time.time()
-	solver.solve(0)
+	solver.solve(1, 0)
 	t2 = time.time()
 	x = solver.retrieve()
 	t3 = time.time()

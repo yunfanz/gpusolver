@@ -16,7 +16,7 @@ def test_all(A, Axbonly=False):
 
        #Solve AtAx=Atb using QR (0:QR, 1:cholesky, 2:LU, 3:SVD)
        for i in xrange(3):
-              solver.solve(i)
+              solver.solve(1,i)
               #retrieve result to host
               x = solver.retrieve()
               print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
@@ -32,7 +32,7 @@ def test_all(A, Axbonly=False):
 
        solver.from_csr(Acsr.indptr, Acsr.indices, Acsr.data, b)
        #print "here"
-       solver.solve(0)
+       solver.solve(0,0)
 
        #retrieve result to host
        x = solver.retrieve()

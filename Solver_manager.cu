@@ -400,8 +400,10 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
     h_csrValA = data_;
     baseA = h_csrRowPtrA[0];
     nnzA = h_csrRowPtrA[rowsA] - baseA;
-    //checkMatrix(nnzA, 1, h_csrValA, nnzA, "h_valA");
+
     cusparseStatus_t cpstat;
+    //checkMatrix(nnzA, 1, h_csrValA, nnzA, "h_valA");
+    
 
     cusparseSetMatType(descrA,CUSPARSE_MATRIX_TYPE_GENERAL); 
     cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
@@ -444,21 +446,57 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
 
 }
 
-void DnSolver::solve(int Func) {
+void DnSolver::solve(int multFunc, int Func) {
     //printf("step 6: compute AtA \n");
     cublasStatus_t cbstat;
-    float al =1.0;// al =1
-    float bet =0.0;// bet =0
+    cusparseStatus_t cpstat;
+
+    //if (dAtA == NULL){
+    //    checkCudaErrors(cudaMalloc(&dAtA, sizeof(float)*colsA*colsA));
+    //    checkCudaErrors(cudaMalloc((void **)&d_Atb, sizeof(float)*colsA));
+    //}
     float* dAtA;
-    checkCudaErrors(cudaMalloc(&dAtA, sizeof(float)*colsA*colsA));
-
-    cbstat = cublasSgemm(cublasHandle,CUBLAS_OP_T,CUBLAS_OP_N,colsA,colsA,rowsA,&al,d_A,rowsA,d_A,rowsA,&bet,dAtA,colsA);
-
-    // printf("step 7: compute At*b \n");
     float* d_Atb;
+    checkCudaErrors(cudaMalloc((void **)&dAtA, sizeof(float)*colsA*colsA));
     checkCudaErrors(cudaMalloc((void **)&d_Atb, sizeof(float)*colsA));
-    cbstat = cublasSgemv(cublasHandle,CUBLAS_OP_T,rowsA,colsA,&al,d_A,rowsA,d_b,1,&bet,d_Atb,1);
 
+    if ( multFunc == 0){
+        printf("using sparse multiply\n");
+        cpstat = cusparseScsrmm(cusparseHandle,
+                                CUSPARSE_OPERATION_TRANSPOSE,
+                                rowsA,colsA,colsA,nnzA, &al,
+                                descrA, 
+                                d_csrValA,
+                                d_csrRowPtrA, 
+                                d_csrColIndA, 
+                                d_A,rowsA,
+                                &bet,dAtA,colsA);
+        
+        cpstat = cusparseScsrmv(cusparseHandle,
+                            CUSPARSE_OPERATION_TRANSPOSE,
+                            rowsA,colsA, nnzA, &al,
+                            descrA, 
+                            d_csrValA,
+                            d_csrRowPtrA, 
+                            d_csrColIndA, 
+                            d_b,&bet,d_Atb);
+    }
+
+    else {
+        cbstat = cublasSgemm(cublasHandle,
+                            CUBLAS_OP_T,CUBLAS_OP_N,
+                            colsA,colsA,rowsA,&al,
+                            d_A,rowsA,d_A,rowsA,
+                            &bet,dAtA,colsA);
+
+        cbstat = cublasSgemv(cublasHandle,
+                            CUBLAS_OP_T,
+                            rowsA,colsA,&al,
+                            d_A,rowsA,d_b,
+                            1,&bet,d_Atb,1);
+    }
+
+    
     //print out for debug
     //checkMatrix(rowsA, colsA , d_A, lda, "A");
     //checkMatrix(rowsA, 1 , d_b, rowsA, "b");
