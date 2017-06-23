@@ -9,9 +9,11 @@
 #include <cuda_runtime.h>
 #include "SI.h"
 #include "cublas_v2.h"
+#include "cusparse.h"
 #include "cusolverDn.h"
 #include "helper_cuda.h"
 #include "helper_cusolver.h"
+
 int linearSolverCHOL(
     cusolverDnHandle_t handle,
     int n,
@@ -353,6 +355,7 @@ int linearSolverQR(
 
 DnSolver::DnSolver (int rows_, int cols_) 
 {
+    DnSolver::~DnSolver();
 
     rowsA = rows_;
     colsA = cols_;
@@ -361,25 +364,33 @@ DnSolver::DnSolver (int rows_, int cols_)
     checkCudaErrors(cusolverDnCreate(&handle));
     checkCudaErrors(cublasCreate(&cublasHandle));
     checkCudaErrors(cudaStreamCreate(&stream));
+    checkCudaErrors(cusparseCreate(&cusparseHandle));
+    checkCudaErrors(cusparseCreateMatDescr(&descrA));
 
     checkCudaErrors(cusolverDnSetStream(handle, stream));
     checkCudaErrors(cublasSetStream(cublasHandle, stream));
+    checkCudaErrors(cusparseSetStream(cusparseHandle, stream));
+
 
     h_A = (float*)malloc(sizeof(float)*lda*colsA);
     h_x = (float*)malloc(sizeof(float)*colsA);
     h_b = (float*)malloc(sizeof(float)*rowsA);
 
-    checkCudaErrors(cudaMalloc((void **)&d_A, sizeof(float)*lda*colsA));
     checkCudaErrors(cudaMalloc((void **)&d_x, sizeof(float)*colsA));
     checkCudaErrors(cudaMalloc((void **)&d_b, sizeof(float)*rowsA));
+    checkCudaErrors(cudaMalloc((void **)&d_A, sizeof(float)*lda*colsA)); 
+
+
 }
 
 void DnSolver::from_dense(float* array_host_, float* rhs_){
+
     h_A = array_host_;
     h_b = rhs_;
     checkCudaErrors(cudaMemcpy(d_A, h_A, sizeof(float)*lda*colsA, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_b, h_b, sizeof(float)*rowsA, cudaMemcpyHostToDevice));
 }
+
 
 void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
     
@@ -388,22 +399,49 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
     h_csrColIndA = indices_;
     h_csrValA = data_;
     baseA = h_csrRowPtrA[0];
-    
-    //memset(h_A, 0, sizeof(float)*lda*colsA);
-    //printf("from_csr: converting to dense\n");
-    for(int row = 0 ; row < rowsA ; row++)
-    {
-        const int start = h_csrRowPtrA[row  ]-baseA;
-        const int end   = h_csrRowPtrA[row+1]-baseA;
-        for(int colidx = start ; colidx < end ; colidx++)
-        {
-            const int col = h_csrColIndA[colidx]-baseA;
-            const float Areg = h_csrValA[colidx];
-            h_A[row + col*lda] = Areg; //col major order
-        }
+    nnzA = h_csrRowPtrA[rowsA] - baseA;
+    //checkMatrix(nnzA, 1, h_csrValA, nnzA, "h_valA");
+    cusparseStatus_t cpstat;
+
+    cusparseSetMatType(descrA,CUSPARSE_MATRIX_TYPE_GENERAL); 
+    cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
+    if (d_csrRowPtrA == NULL ){
+        printf("allocating pointers \n");
+        checkCudaErrors(cudaMalloc((void **)&d_csrRowPtrA, sizeof(int)*(rowsA+1)));
+        checkCudaErrors(cudaMalloc((void **)&d_csrColIndA, sizeof(int)*nnzA));
+        checkCudaErrors(cudaMalloc((void **)&d_csrValA, sizeof(float)*nnzA));
     }
-    checkCudaErrors(cudaMemcpy(d_A, h_A, sizeof(float)*lda*colsA, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrRowPtrA, h_csrRowPtrA, sizeof(int)*(rowsA+1), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrColIndA, h_csrColIndA, sizeof(int)*nnzA, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrValA, h_csrValA, sizeof(float)*nnzA, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_b, h_b, sizeof(float)*rowsA, cudaMemcpyHostToDevice));
+
+    cpstat = cusparseScsr2dense(
+                    cusparseHandle, 
+                    rowsA, colsA, 
+                    descrA, 
+                    d_csrValA, 
+                    d_csrRowPtrA,
+                    d_csrColIndA, 
+                    d_A, rowsA);
+    if (cpstat != CUSPARSE_STATUS_SUCCESS) { 
+        printf ("%s\n", "CuSparse CSR to dense conversion failed"); 
+        return; 
+    } 
+
+    //if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
+    //if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
+    //if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
+
+    //cpstat = cusparseScsrmm(cusparseHandle,
+    //                        CUSPARSE_OPERATION_TRANSPOSE,
+    //                        colsA,colsA,rowsA,nnzA, &al,
+    //                        descrA, 
+    //                        d_csrValA,
+    //                        h_csrRowPtrA, 
+    //                        d_csrColIndA, rowsA,d_A,rowsA,&bet,dAtA,colsA);
+
+
 }
 
 void DnSolver::solve(int Func) {
@@ -453,6 +491,10 @@ void DnSolver::solve(int Func) {
         fprintf(stderr, "Error: %d is unknown function\n", Func);
         exit(EXIT_FAILURE);
     }
+    //if (dAtA) { checkCudaErrors(cudaFree(dAtA)); }
+    //if (d_Atb) { checkCudaErrors(cudaFree(d_Atb)); }
+    //if (d_A) { checkCudaErrors(cudaFree(d_A)); }
+    //if (d_b) { checkCudaErrors(cudaFree(d_b)); }
 
 }
 void DnSolver::solve_Axb(int Func) {
@@ -479,6 +521,8 @@ void DnSolver::solve_Axb(int Func) {
         fprintf(stderr, "Error: %d is unknown function\n", Func);
         exit(EXIT_FAILURE);
     }
+    //if (d_A) { checkCudaErrors(cudaFree(d_A)); }
+    //if (d_b) { checkCudaErrors(cudaFree(d_b)); }
 
 }
 void DnSolver::retrieve_to(float* h_x)
@@ -491,6 +535,8 @@ DnSolver::~DnSolver()
 {
     if (handle) { checkCudaErrors(cusolverDnDestroy(handle)); }
     if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
+    if (cusparseHandle) { checkCudaErrors(cusparseDestroy(cusparseHandle)); }
+    if (descrA) { checkCudaErrors(cusparseDestroyMatDescr(descrA)); }
     if (stream) { checkCudaErrors(cudaStreamDestroy(stream)); }
 
     if (h_A) { free(h_A); }
@@ -504,4 +550,9 @@ DnSolver::~DnSolver()
     if (d_A) { checkCudaErrors(cudaFree(d_A)); }
     if (d_x) { checkCudaErrors(cudaFree(d_x)); }
     if (d_b) { checkCudaErrors(cudaFree(d_b)); }
+
+
+    if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
+    if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
+    if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
 }

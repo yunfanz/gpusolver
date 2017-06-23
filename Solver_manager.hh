@@ -1,13 +1,18 @@
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
+#include "cusparse.h"
 #include "cusolverDn.h"
 #include "helper_cuda.h"
+
+
 class DnSolver{
 
 
     cusolverDnHandle_t handle = NULL;
     cublasHandle_t cublasHandle = NULL; // used in residual evaluation
     cudaStream_t stream = NULL;
+    cusparseHandle_t cusparseHandle = 0;
+    cusparseMatDescr_t descrA = 0;
 
 
     int rowsA = 0; // number of rows of A
@@ -21,9 +26,9 @@ class DnSolver{
     int *h_csrColIndA = NULL;
     float *h_csrValA = NULL;
     // // CSC(A) from I/O
-    // // int *h_cscColPtrA = NULL;
-    // // int *h_cscRowIndA = NULL;
-    // // float *h_cscValA = NULL;
+    int *d_csrRowPtrA = NULL;
+    int *d_csrColIndA = NULL;
+    float *d_csrValA = NULL;
 
     float *h_A = NULL; // dense matrix from CSR(A)
     float *h_x = NULL; // a copy of d_x
@@ -36,10 +41,15 @@ class DnSolver{
     float *d_b = NULL; // a copy of h_b
     // float *d_r = NULL; // r = b - A*x
     // float *d_tr = NULL; // tr = Atb - AtA*x
+    //float* dAtA = NULL;
+    //float* d_Atb = NULL;
 
     // the constants are used in residual evaluation, r = b - A*x
     const float minus_one = -1.0;
     const float one = 1.0;
+
+    const float al =1.0;// al =1
+    const float bet =0.0;// bet =0
 
     // float x_inf = 0.0;
     // float r_inf = 0.0;

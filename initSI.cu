@@ -63,3 +63,5 @@ template void initSI<double>(double *SI, double *SDiag, int numR, int numC, doub
 template void initSI<float>(float *SI, float *SDiag, int numR, int numC, float epsilon, int threadsPerBlock);
 template __global__ void initSIGPU<float>(float *SI, float *SDiag, int numR, int maxInd, float epsilon);
 template __global__ void initSIGPU<double>(double *SI, double *SDiag, int numR, int maxInd, double epsilon);
+
+

@@ -29,7 +29,9 @@ def test_all(A, Axbonly=False):
 
        #testing constructor from csr
        Acsr = csr_matrix(A)
+
        solver.from_csr(Acsr.indptr, Acsr.indices, Acsr.data, b)
+       #print "here"
        solver.solve(0)
 
        #retrieve result to host
