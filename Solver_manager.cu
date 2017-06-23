@@ -429,9 +429,9 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
         return; 
     } 
 
-    if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
-    if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
-    if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
+    //if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
+    //if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
+    //if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
 
     //cpstat = cusparseScsrmm(cusparseHandle,
     //                        CUSPARSE_OPERATION_TRANSPOSE,
