@@ -3,7 +3,7 @@ import gpusolver
 import itertools, time
 from scipy.sparse import csr_matrix
 
-nfreqs = np.arange(1,11)
+nfreqs = np.arange(11,21,2)
 nants = 350
 
 T_transfer, T_compute, Asize = [], [], []

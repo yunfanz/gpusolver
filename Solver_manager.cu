@@ -429,9 +429,9 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
         return; 
     } 
 
-    //if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
-    //if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
-    //if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
+    if (d_csrValA   ) { checkCudaErrors(cudaFree(d_csrValA)); }
+    if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
+    if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
 
     //cpstat = cusparseScsrmm(cusparseHandle,
     //                        CUSPARSE_OPERATION_TRANSPOSE,
@@ -491,8 +491,8 @@ void DnSolver::solve(int Func) {
         fprintf(stderr, "Error: %d is unknown function\n", Func);
         exit(EXIT_FAILURE);
     }
-    //if (dAtA) { checkCudaErrors(cudaFree(dAtA)); }
-    //if (d_Atb) { checkCudaErrors(cudaFree(d_Atb)); }
+    if (dAtA) { checkCudaErrors(cudaFree(dAtA)); }
+    if (d_Atb) { checkCudaErrors(cudaFree(d_Atb)); }
     //if (d_A) { checkCudaErrors(cudaFree(d_A)); }
     //if (d_b) { checkCudaErrors(cudaFree(d_b)); }
 
@@ -528,7 +528,9 @@ void DnSolver::solve_Axb(int Func) {
 void DnSolver::retrieve_to(float* h_x)
 {
     checkCudaErrors(cudaMemcpy(h_x, d_x, sizeof(float)*colsA, cudaMemcpyDeviceToHost));
-    //printf("x0 = %E \n", h_x[0]);
+    //checkCudaErrors(cudaFree(d_x));
+    //if (d_A) { checkCudaErrors(cudaFree(d_A)); }
+    //if (d_b) { checkCudaErrors(cudaFree(d_b)); }
 }
 
 DnSolver::~DnSolver()
