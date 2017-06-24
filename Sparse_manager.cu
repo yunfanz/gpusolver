@@ -33,7 +33,7 @@ SpSolver::SpSolver (int rows_, int cols_, int batch_)
     checkCudaErrors(cublasSetStream(cublasHandle, stream));
     checkCudaErrors(cusparseSetStream(cusparseHandle, stream));
 
-    h_x = (float*)malloc(sizeof(float)*colsA*batchSize); //maybe this is unncessary
+    //h_x = (float*)malloc(sizeof(float)*colsA*batchSize); //maybe this is unncessary
     h_b = (float*)malloc(sizeof(float)*rowsA*batchSize);
 
 
@@ -127,7 +127,7 @@ void SpSolver::from_csr(float* data_, float* rhs_){
     h_csrValABatch = data_;
 }
 
-void SpSolver::solve_Axb_and_retrieve(float* h_x) {
+void SpSolver::solve_Axb_and_retrieve(float* python_x) {
 
 
     for(int idx = 0 ; idx < batchSize; idx += batchSizeMax)
@@ -139,6 +139,11 @@ void SpSolver::solve_Axb_and_retrieve(float* h_x) {
         // copy part of Aj and bj to device 
         checkCudaErrors(cudaMemcpy(d_csrValA, h_csrValABatch + idx*nnzA, sizeof(float) * nnzA * cur_batchSize, cudaMemcpyHostToDevice)); 
         checkCudaErrors(cudaMemcpy(d_b, h_b + idx*rowsA, sizeof(float) * rowsA * cur_batchSize, cudaMemcpyHostToDevice)); 
+
+        //debugging:
+        //checkMatrix(nnzA, cur_batchSize, d_csrValA, nnzA, "h_valA");
+        //checkMatrix(rowsA, cur_batchSize, d_b, rowsA, "h_b");
+
         // solve part of Aj*xj = bj 
         cusolverSpScsrqrsvBatched( cusolverSpH, 
                                     rowsA, colsA, nnzA, descrA,
@@ -147,7 +152,8 @@ void SpSolver::solve_Axb_and_retrieve(float* h_x) {
                                     cur_batchSize, 
                                     info, buffer_qr); 
         // copy part of xj back to host 
-        checkCudaErrors(cudaMemcpy(h_x + idx*colsA, d_x, sizeof(float) * colsA * cur_batchSize, cudaMemcpyDeviceToHost)); 
+        //checkMatrix(colsA, cur_batchSize, d_x, colsA, "d_x");
+        checkCudaErrors(cudaMemcpy(python_x + idx*colsA, d_x, sizeof(float)*colsA*cur_batchSize, cudaMemcpyDeviceToHost)); 
     }
 
 }

@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix
 
 
 def test_all(A):
-       batch = 1000
+       batch = 1
        b = np.ones(A.shape[0], dtype=np.float32)
        #initialize with shape of array
        AtA = np.dot(A.T,A)
@@ -12,7 +12,7 @@ def test_all(A):
        solver = gpusolver.SpSolver(AtA.shape[0],AtA.shape[1], batch)
 
        #get numpy result:
-       x_np = np.dot(np.linalg.pinv(np.dot(A.T,A)), np.dot(A.T,b))
+       x_np = np.dot(np.linalg.pinv(AtA), Atb)
 
        #testing constructor from csr
        Acsr = csr_matrix(AtA)
@@ -20,14 +20,14 @@ def test_all(A):
        solver.prepare_workspace(Acsr.indptr, Acsr.indices)
 
        dataA = np.hstack([Acsr.data for i in xrange(batch)])
-       datab = np.hstack([b for i in xrange(batch)])
+       datab = np.hstack([Atb for i in xrange(batch)])
        solver.from_csr(dataA, datab)
 
        #retrieve result to host
        
-       print solver.solve_Axb_and_retrieve()
-       #print x.shape
-       #print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
+       x = solver.solve_Axb_and_retrieve()[:AtA.shape[1]]
+       #print x, x_np
+       print 'Relative Error', np.sum((x-x_np)**2)/np.sum(x_np**2)
 
 
 

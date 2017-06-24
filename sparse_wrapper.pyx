@@ -32,4 +32,6 @@ cdef class SpSolver:
     def solve_Axb_and_retrieve(self):
         cdef np.ndarray[ndim=1, dtype=np.float32_t] x = np.zeros(self.cols*self.batchsize, dtype=np.float32)
 
-        return self.g.solve_Axb_and_retrieve(&x[0])
+        self.g.solve_Axb_and_retrieve(&x[0])
+
+        return x
