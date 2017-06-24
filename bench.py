@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt 
 
 
-shape = (60000,6500)
+shape = (10000,6500)
 A = np.random.random(shape).astype(np.float32)
 b = np.random.random(shape[0]).astype(np.float32)
 T_transfer, T_compute = [], []

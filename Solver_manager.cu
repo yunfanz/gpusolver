@@ -13,6 +13,8 @@
 #include "cusolverDn.h"
 #include "helper_cuda.h"
 #include "helper_cusolver.h"
+#include <chrono>
+#include <iostream>
 
 int linearSolverCHOL(
     cusolverDnHandle_t handle,
@@ -248,6 +250,7 @@ int linearSolverQR(
     const float *b,
     float *x)
 {
+    auto t0 = std::chrono::high_resolution_clock::now();
     cublasHandle_t cublasHandle = NULL; // used in residual evaluation
     int bufferSize = 0;
     int bufferSize_geqrf = 0;
@@ -257,8 +260,7 @@ int linearSolverQR(
     float *A = NULL;
     float *tau = NULL;
     int h_info = 0;
-    float start, stop;
-    float time_solve;
+    float time_solve, time_prepare;
     const float one = 1.0;
 
     checkCudaErrors(cublasCreate(&cublasHandle));
@@ -292,8 +294,8 @@ int linearSolverQR(
 
     checkCudaErrors(cudaMemset(info, 0, sizeof(int)));
 
-    start = second();
-    start = second();
+    
+    auto t1 = std::chrono::high_resolution_clock::now();
 
 // compute QR factorization
     checkCudaErrors(cusolverDnSgeqrf(handle, n, n, A, lda, tau, buffer, bufferSize, info));
@@ -338,10 +340,14 @@ int linearSolverQR(
          x,
          n));
     checkCudaErrors(cudaDeviceSynchronize());
-    stop = second();
+    auto t2 = std::chrono::high_resolution_clock::now();
 
-    time_solve = stop - start;
-    fprintf (stdout, "timing: QR = %10.6f sec\n", time_solve);
+    std::cout << "QR prepare and solve total took "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+              << "\n"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+              << " milliseconds respectively \n";
+
 
     if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
     if (info  ) { checkCudaErrors(cudaFree(info  )); }
