@@ -244,6 +244,7 @@ int linearSolverSVD(
  */
 int linearSolverQR(
     cusolverDnHandle_t handle,
+    cublasHandle_t cublasHandle,
     int n,
     const float *Acopy,
     int lda,
@@ -251,7 +252,6 @@ int linearSolverQR(
     float *x)
 {
     auto t0 = std::chrono::high_resolution_clock::now();
-    cublasHandle_t cublasHandle = NULL; // used in residual evaluation
     int bufferSize = 0;
     int bufferSize_geqrf = 0;
     int bufferSize_ormqr = 0;
@@ -260,10 +260,7 @@ int linearSolverQR(
     float *A = NULL;
     float *tau = NULL;
     int h_info = 0;
-    float time_solve, time_prepare;
     const float one = 1.0;
-
-    checkCudaErrors(cublasCreate(&cublasHandle));
 
     checkCudaErrors(cusolverDnSgeqrf_bufferSize(handle, n, n, (float*)Acopy, lda, &bufferSize_geqrf));
     checkCudaErrors(cusolverDnSormqr_bufferSize(
@@ -348,8 +345,6 @@ int linearSolverQR(
               << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
               << " milliseconds respectively \n";
 
-
-    if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
     if (info  ) { checkCudaErrors(cudaFree(info  )); }
     if (buffer) { checkCudaErrors(cudaFree(buffer)); }
     if (A     ) { checkCudaErrors(cudaFree(A)); }
@@ -476,7 +471,7 @@ void DnSolver::solve(int Func) {
 
     if ( 0 == Func )
     {
-        linearSolverQR(handle, colsA, dAtA, colsA, d_Atb, d_x);
+        linearSolverQR(handle, cublasHandle, colsA, dAtA, colsA, d_Atb, d_x);
     }
     else if ( 1 == Func )
     {
@@ -506,7 +501,7 @@ void DnSolver::solve_Axb(int Func) {
 
     if ( 0 == Func )
     {
-        linearSolverQR(handle, colsA, d_A, colsA, d_b, d_x);
+        linearSolverQR(handle, cublasHandle, colsA, d_A, colsA, d_b, d_x);
     }
     else if ( 1 == Func )
     {
