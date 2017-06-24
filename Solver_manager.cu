@@ -447,8 +447,6 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
 void DnSolver::solve(int Func) {
     //printf("step 6: compute AtA \n");
     cublasStatus_t cbstat;
-    float al =1.0;// al =1
-    float bet =0.0;// bet =0
     float* dAtA;
     checkCudaErrors(cudaMalloc(&dAtA, sizeof(float)*colsA*colsA));
 

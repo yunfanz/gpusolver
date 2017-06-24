@@ -48,8 +48,8 @@ class DnSolver{
     const float minus_one = -1.0;
     const float one = 1.0;
 
-    const float al =1.0;// al =1
-    const float bet =0.0;// bet =0
+    const float al = 1.0;// al =1
+    const float bet = 0.0;// bet =0
 
     // float x_inf = 0.0;
     // float r_inf = 0.0;
