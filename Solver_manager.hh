@@ -22,10 +22,12 @@ class DnSolver{
     int lda   = 0; // leading dimension in dense matrix
 
     // CSR(A) 
+    int *h_cooRowIndA = NULL;
     int *h_csrRowPtrA = NULL;
     int *h_csrColIndA = NULL;
     float *h_csrValA = NULL;
     // // CSC(A) from I/O
+    int *d_cooRowIndA = NULL;
     int *d_csrRowPtrA = NULL;
     int *d_csrColIndA = NULL;
     float *d_csrValA = NULL;
@@ -70,6 +72,7 @@ public:
   void from_dense(float* array_host_, float* rhs_);
 
   void from_csr(int* indptr_, int* indices_, float* data_, float* rhs_);
+  void from_coo(int* indptr_, int* indices_, float* data_, int nnz_, float* rhs_);
 
   void solve(int multFunc, int func); // AtA solver for non-square matrices
   void solve_Axb(int func); // for square matrices, only use qr or lu if non-symmetric

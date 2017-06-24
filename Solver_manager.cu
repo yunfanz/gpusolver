@@ -131,7 +131,7 @@ int linearSolverLU(
 }
 
 
-int linearSolverSVD(
+void linearSolverSVD(
     cusolverDnHandle_t handle, 
     int n,
     const float *Acopy,
@@ -232,7 +232,6 @@ int linearSolverSVD(
     if (d_W ) cudaFree(d_W); 
     if (cublasHandle ) cublasDestroy(cublasHandle); 
     // if (cusolverH) cusolverDnDestroy(cusolverH); 
-    return 0;
 
 }
 
@@ -435,15 +434,51 @@ void DnSolver::from_csr(int* indptr_, int* indices_, float* data_, float* rhs_){
     //if (d_csrRowPtrA) { checkCudaErrors(cudaFree(d_csrRowPtrA)); }
     //if (d_csrColIndA) { checkCudaErrors(cudaFree(d_csrColIndA)); }
 
-    //cpstat = cusparseScsrmm(cusparseHandle,
-    //                        CUSPARSE_OPERATION_TRANSPOSE,
-    //                        colsA,colsA,rowsA,nnzA, &al,
-    //                        descrA, 
-    //                        d_csrValA,
-    //                        h_csrRowPtrA, 
-    //                        d_csrColIndA, rowsA,d_A,rowsA,&bet,dAtA,colsA);
+}
 
+void DnSolver::from_coo(int* indptr_, int* indices_, float* data_, int nnz_, float* rhs_){
+    
+    h_b = rhs_;
+    h_cooRowIndA = indptr_;
+    h_csrColIndA = indices_;
+    h_csrValA = data_;
+    nnzA = nnz_;
 
+    cusparseStatus_t cpstat;
+    //checkMatrix(nnzA, 1, h_csrValA, nnzA, "h_valA");
+    
+
+    cusparseSetMatType(descrA,CUSPARSE_MATRIX_TYPE_GENERAL); 
+    cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
+    if (d_csrRowPtrA == NULL ){
+        printf("allocating pointers \n");
+        checkCudaErrors(cudaMalloc((void **)&d_cooRowIndA, sizeof(int)*nnzA));
+        checkCudaErrors(cudaMalloc((void **)&d_csrRowPtrA, sizeof(int)*(rowsA+1)));
+        checkCudaErrors(cudaMalloc((void **)&d_csrColIndA, sizeof(int)*nnzA));
+        checkCudaErrors(cudaMalloc((void **)&d_csrValA, sizeof(float)*nnzA));
+    }
+    checkCudaErrors(cudaMemcpy(d_cooRowIndA, h_cooRowIndA, sizeof(int)*nnzA, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrColIndA, h_csrColIndA, sizeof(int)*nnzA, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrValA, h_csrValA, sizeof(float)*nnzA, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_b, h_b, sizeof(float)*rowsA, cudaMemcpyHostToDevice));
+
+    cpstat = cusparseXcoo2csr(cusparseHandle,
+                             d_cooRowIndA, nnzA, rowsA,
+                             d_csrRowPtrA,
+                             CUSPARSE_INDEX_BASE_ZERO);
+
+    cpstat = cusparseScsr2dense(
+                    cusparseHandle, 
+                    rowsA, colsA, 
+                    descrA, 
+                    d_csrValA, 
+                    d_csrRowPtrA,
+                    d_csrColIndA, 
+                    d_A, rowsA);
+    if (cpstat != CUSPARSE_STATUS_SUCCESS) { 
+        printf ("%s\n", "CuSparse CSR to dense conversion failed"); 
+        return; 
+    } 
 }
 
 void DnSolver::solve(int multFunc, int Func) {
