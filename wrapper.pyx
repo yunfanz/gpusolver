@@ -40,3 +40,4 @@ cdef class DnSolver:
         self.g.retrieve_to(&x[0])
 
         return x
+
