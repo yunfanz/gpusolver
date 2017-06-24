@@ -13,6 +13,8 @@
 #include "cusolverDn.h"
 #include "helper_cuda.h"
 #include "helper_cusolver.h"
+#include <chrono>
+#include <iostream>
 
 int linearSolverCHOL(
     cusolverDnHandle_t handle,
@@ -242,13 +244,14 @@ int linearSolverSVD(
  */
 int linearSolverQR(
     cusolverDnHandle_t handle,
+    cublasHandle_t cublasHandle,
     int n,
     const float *Acopy,
     int lda,
     const float *b,
     float *x)
 {
-    cublasHandle_t cublasHandle = NULL; // used in residual evaluation
+    auto t0 = std::chrono::high_resolution_clock::now();
     int bufferSize = 0;
     int bufferSize_geqrf = 0;
     int bufferSize_ormqr = 0;
@@ -257,11 +260,7 @@ int linearSolverQR(
     float *A = NULL;
     float *tau = NULL;
     int h_info = 0;
-    float start, stop;
-    float time_solve;
     const float one = 1.0;
-
-    checkCudaErrors(cublasCreate(&cublasHandle));
 
     checkCudaErrors(cusolverDnSgeqrf_bufferSize(handle, n, n, (float*)Acopy, lda, &bufferSize_geqrf));
     checkCudaErrors(cusolverDnSormqr_bufferSize(
@@ -292,8 +291,8 @@ int linearSolverQR(
 
     checkCudaErrors(cudaMemset(info, 0, sizeof(int)));
 
-    start = second();
-    start = second();
+    
+    auto t1 = std::chrono::high_resolution_clock::now();
 
 // compute QR factorization
     checkCudaErrors(cusolverDnSgeqrf(handle, n, n, A, lda, tau, buffer, bufferSize, info));
@@ -338,12 +337,14 @@ int linearSolverQR(
          x,
          n));
     checkCudaErrors(cudaDeviceSynchronize());
-    stop = second();
+    auto t2 = std::chrono::high_resolution_clock::now();
 
-    time_solve = stop - start;
-    fprintf (stdout, "timing: QR = %10.6f sec\n", time_solve);
+    std::cout << "QR prepare and solve total took "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+              << "\n"
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+              << " milliseconds respectively \n";
 
-    if (cublasHandle) { checkCudaErrors(cublasDestroy(cublasHandle)); }
     if (info  ) { checkCudaErrors(cudaFree(info  )); }
     if (buffer) { checkCudaErrors(cudaFree(buffer)); }
     if (A     ) { checkCudaErrors(cudaFree(A)); }
@@ -470,7 +471,7 @@ void DnSolver::solve(int Func) {
 
     if ( 0 == Func )
     {
-        linearSolverQR(handle, colsA, dAtA, colsA, d_Atb, d_x);
+        linearSolverQR(handle, cublasHandle, colsA, dAtA, colsA, d_Atb, d_x);
     }
     else if ( 1 == Func )
     {
@@ -500,7 +501,7 @@ void DnSolver::solve_Axb(int Func) {
 
     if ( 0 == Func )
     {
-        linearSolverQR(handle, colsA, d_A, colsA, d_b, d_x);
+        linearSolverQR(handle, cublasHandle, colsA, d_A, colsA, d_b, d_x);
     }
     else if ( 1 == Func )
     {

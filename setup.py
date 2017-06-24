@@ -66,7 +66,7 @@ ext = Extension('gpusolver',
                 # we're only going to use certain compiler args with nvcc and not with gcc
                 # the implementation of this trick is in customize_compiler() below
                 extra_compile_args={'gcc': ['-std=c++11', '-fopenmp'],
-                                    'nvcc': ['-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
+                                    'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
 
 
