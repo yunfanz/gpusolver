@@ -1,8 +1,23 @@
 import numpy as np
 import gpusolverSp as gpusolver
 import itertools, time
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 import matplotlib.pyplot as plt 
+from scipy.sparse.csgraph import reverse_cuthill_mckee 
+
+def reorder_matrix(matrix, symm=True):
+
+    # reorder based on RCM from scipy.sparse.csgraph
+    rcm_perm = reverse_cuthill_mckee(csr_matrix(matrix), symm)
+    rev_perm_dict = {k : rcm_perm.tolist().index(k) for k in rcm_perm}
+    perm_i = [rev_perm_dict[ii] for ii in matrix.row]
+    perm_j = [rev_perm_dict[jj] for jj in matrix.col]
+
+    new_matrix = csr_matrix(
+        (matrix.data, (perm_i, perm_j)), 
+        shape=matrix.shape
+    )
+    return new_matrix
 
 if False:
 	shape = (60000,6500) 
@@ -43,7 +58,7 @@ nfreqs = np.arange(1,5,2)
 nants = 350
 nvis = 6000
 ncols = nants+nvis
-batch = 256
+batch = 128
 
 T_transfer, T_compute, Asize = [], [], []
 
@@ -64,7 +79,7 @@ for pair in itertools.combinations(np.arange(nants), 2):
 A = csr_matrix( (data,(rows,cols)), shape=(nrows,ncols) ).todense()
 AtA = np.dot(A.T, A)
 Atb = np.asarray(np.dot(A.T, b)).flatten()
-AtAcsr = csr_matrix(AtA)
+AtAcsr = reorder_matrix(coo_matrix(AtA))
 dataA = np.hstack([AtAcsr.data for i in xrange(batch)])
 datab = np.hstack([Atb for i in xrange(batch)])
 
