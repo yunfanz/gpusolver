@@ -92,6 +92,23 @@ void SpSolver::prepare_workspace(int* indptr_, int* indices_){
         batchSizeMax *= 2; // float batchSizMax and try it again. 
     } 
 
+    //Try to squeeze out last bit of memory
+    if (batchSizeMax > 1){
+        batchSizeMax += batchSizeMax/2;
+        cusolverSpScsrqrBufferInfoBatched( cusolverSpH, 
+                                            rowsA, colsA, nnzA, descrA, 
+                                            d_csrValA, d_csrRowPtrA, d_csrColIndA, 
+                                            batchSizeMax, 
+                                            info, 
+                                            &size_internal, 
+                                            &size_qr); 
+
+        if ( (size_internal + size_qr) > free_mem ){  //batchSizeMax exceeds hardware limit
+            batchSizeMax -= batchSizeMax/3;
+        } 
+
+    }
+
     // correct batchSizeMax such that it is not greater than batchSize. 
     batchSizeMax = imin(batchSizeMax, batchSize); 
     printf("batchSizeMax = %d\n", batchSizeMax);
