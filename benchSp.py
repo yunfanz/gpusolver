@@ -62,8 +62,8 @@ if False:
 
 # Radio astronomy bench
 nfreqs = np.arange(1,5,2)
-nants = 100
-nvis = 500
+nants = 350
+nvis = 6000
 ncols = nants+nvis
 
 
@@ -92,9 +92,10 @@ Atb = reorder_vector(Atb_, rcm_perm, False)
 #Atb = Atb_
 #import IPython; IPython.embed()
 #AtAcsr = csr_matrix(AtA)
-x_np = np.asarray(np.dot(np.linalg.pinv(AtA), Atb_)).flatten()
+#x_np = np.asarray(np.dot(np.linalg.pinv(AtA), Atb_)).flatten()
 
-batches = np.array([16, 32, 64, 128, 256, 512])
+#batches = np.array([16, 32, 64, 128, 256, 512])
+batches= np.array([128])
 for batch in batches:
 	#import IPython; IPython.embed()
 	dataA = np.hstack([AtAcsr.data for i in xrange(batch)])
@@ -112,7 +113,7 @@ for batch in batches:
 	t2 = time.time()
 	T_compute.append((t2-t1))
 	T_transfer.append((t1-t0))
-	print x.shape, x_np.shape
+	#print x.shape, x_np.shape
 	x = reorder_vector(x, rcm_perm, True)
 	#import IPython; IPython.embed()
 	print 'Relative Error', np.sum((np.asarray(np.dot(AtA, x))[0]-Atb_)**2)/np.sum(Atb**2)
