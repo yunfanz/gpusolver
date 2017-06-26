@@ -56,27 +56,21 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 #import IPython; IPython.embed()
-ext = Extension('gpusolverDn',
+extdn = Extension('DnSolver',
                 sources=['Solver_manager.cu', 'wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
                 language='c++',
                 runtime_library_dirs=[CUDA['lib64'], '/usr/lib/'],
-                # this syntax is specific to this build system
-                # we're only going to use certain compiler args with nvcc and not with gcc
-                # the implementation of this trick is in customize_compiler() below
                 extra_compile_args={'gcc': ['-std=c++11', '-fopenmp'],
                                     'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
-extsp = Extension('gpusolverSp',
+extsp = Extension('SpSolver',
                 sources=['Sparse_manager.cu', 'sparse_wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
                 language='c++',
                 runtime_library_dirs=[CUDA['lib64'], '/usr/lib/'],
-                # this syntax is specific to this build system
-                # we're only going to use certain compiler args with nvcc and not with gcc
-                # the implementation of this trick is in customize_compiler() below
                 extra_compile_args={'gcc': ['-std=c++11', '-fopenmp'],
                                     'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
@@ -133,7 +127,7 @@ setup(name='gpusolver',
       author='Yunfan Zhang',
       version='0.1',
 
-      ext_modules = [extsp],
+      ext_modules = [extdn,],
 
       # inject our custom trigger
       cmdclass={'build_ext': custom_build_ext},
