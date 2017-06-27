@@ -56,7 +56,7 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 #import IPython; IPython.embed()
-extdn = Extension('DnSolver',
+extdn = Extension('gpusolver',
                 sources=['Solver_manager.cu', 'wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
@@ -65,7 +65,7 @@ extdn = Extension('DnSolver',
                 extra_compile_args={'gcc': ['-std=c++11', '-fopenmp'],
                                     'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
-extsp = Extension('SpSolver',
+extsp = Extension('gpusolver',
                 sources=['Sparse_manager.cu', 'sparse_wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
@@ -127,7 +127,7 @@ setup(name='gpusolver',
       author='Yunfan Zhang',
       version='0.1',
 
-      ext_modules = [extdn,],
+      ext_modules = [extsp],
 
       # inject our custom trigger
       cmdclass={'build_ext': custom_build_ext},
