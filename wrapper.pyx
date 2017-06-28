@@ -4,7 +4,7 @@ cimport numpy as np
 #assert sizeof(int) == sizeof(np.int32_t)
 #assert sizeof(np.float32) == sizeof(np.float32_t)
 
-cdef extern from "Solver_manager.hh":
+cdef extern from "Solver_manager.hh" namespace "dn":
     cdef cppclass C_DnSolver "DnSolver":
         C_DnSolver(np.int32_t, np.int32_t)
         void from_dense(np.float32_t*, np.float32_t*)

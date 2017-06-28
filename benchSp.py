@@ -142,14 +142,15 @@ if False:
 
 
 
-def _HERA_plotsense_dict(file, NANTS=None):
+def _HERA_plotsense_dict(file, NANTS=None, keep_non_red=False):
 	antpos = np.loadtxt(file)
 	if NANTS is None:
 		NANTS = antpos.shape[0]
 
 	bl_gps = {}
 	ant_gps = {}
-	n_unique = 0
+	
+	print "making bl_gps"
 	for i in xrange(NANTS-1):
 		a1pos = antpos[i]
 		for j in xrange(i+1,NANTS):
@@ -157,21 +158,28 @@ def _HERA_plotsense_dict(file, NANTS=None):
 			blx, bly, blz = a2pos-a1pos
 			has_entry = False
 			for key in bl_gps.keys():
-				if np.hypot(key[0]-blx, key[1]-bly) < 1:
+				#if np.hypot(key[0]-blx, key[1]-bly) < 1 or np.hypot(key[0]+blx, key[1]+bly) < 1:
+				if (abs(key[0]-blx)<0.1 and abs(key[1]-bly)<0.1) or (abs(key[0]+blx)<0.1 and abs(key[1]+bly)<0.1):
 					has_entry = True
 					bl_gps[key] = bl_gps.get(key, []) + [(i,j)]
-					ant_gps[(i,j)] = n_unique - 1
 					break
 			if not has_entry:
 				bl_gps[(blx, bly)] = [(i,j)]
-				ant_gps[(i,j)] = n_unique
-				n_unique += 1
-
-	assert(n_unique == len(bl_gps.keys()))
+				
+	#assert(n_unique == len(bl_gps.keys()))
 	n_total = NANTS*(NANTS-1)/2
+
+
+	print "making ant_gps"
+	n_unique = 0
+	for k, v in bl_gps.iteritems():
+		if len(v) >= 2 or keep_non_red:
+			for pair in v:
+				ant_gps[pair] = n_unique
+			n_unique += 1
+
 	
 	print "Found %d classes among %d total baselines" % (n_unique, n_total)
-	print "Sorting dictionary"
 	return ant_gps, bl_gps
 
 
@@ -179,12 +187,13 @@ def _HERA_plotsense_dict(file, NANTS=None):
 
 if True:
 	# Radio astronomy bench from actual HERA antconfig file
-	nants = 350
-	FILE = "./HERA_antconfig/antenna_positions_{}.dat".format(nants)
-	ant_gps, bl_gps = _HERA_plotsense_dict(FILE)
+	version, nants = 350, 350
+	FILE = "./HERA_antconfig/antenna_positions_{}.dat".format(version)
+	print "getting unique baselines"
+	ant_gps, bl_gps = _HERA_plotsense_dict(FILE, nants)
 	nvis = len(bl_gps.keys())
 	ncols = nants+nvis
-	nchan = 1024
+	nchan = 256
 
 
 	T_transfer, T_compute, Asize = [], [], []
@@ -199,7 +208,10 @@ if True:
 	i = 0
 	for pair in itertools.combinations(np.arange(nants), 2):
 		cols[i], cols[i+1] = pair[0], pair[1]
-		cols[i+2] = ant_gps[(pair[0], pair[1])] + nants
+		try:
+			cols[i+2] = ant_gps[(pair[0], pair[1])] + nants
+		except(KeyError):
+			pass
 		i += 3
 
 	A = csr_matrix( (data,(rows,cols)), shape=(nrows,ncols) ).todense()
@@ -208,9 +220,13 @@ if True:
 	AtAcsr, rcm_perm = reorder_matrix(coo_matrix(AtA))
 	Atb = reorder_vector(Atb_, rcm_perm, False)
 	#Atb = Atb_
-	import IPython; IPython.embed()
-	#AtAcsr = csr_matrix(AtA)
-	#x_np = np.asarray(np.dot(np.linalg.pinv(AtA), Atb_)).flatten()
+	#import IPython; IPython.embed()
+	#AtAcsr = csr_matrix(AtA)\
+	if False:
+		t0 = time.time()
+		x_np = np.asarray(np.dot(np.linalg.pinv(AtA), Atb_)).flatten()
+		t1 = time.time()
+		print "numpy time {}".format(t1-t0)
 
 	#batches = np.array([16, 32, 64, 128, 256, 512])
 	batch = nchan

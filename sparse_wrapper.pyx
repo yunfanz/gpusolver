@@ -5,7 +5,7 @@ cimport numpy as np
 #assert sizeof(np.float32) == sizeof(np.float32_t)
 
 
-cdef extern from "Sparse_manager.hh":
+cdef extern from "Sparse_manager.hh" namespace "sp":
     cdef cppclass C_SpSolver "SpSolver":
         C_SpSolver(np.int32_t, np.int32_t, np.int32_t)
         void prepare_workspace(np.int32_t*, np.int32_t*)
