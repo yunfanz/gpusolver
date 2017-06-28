@@ -57,7 +57,7 @@ except AttributeError:
 
 #import IPython; IPython.embed()
 ext = Extension('gpusolver',
-                sources=['gpusolver.pyx'],
+                sources=['initSI.cu', 'Solver_manager.cu', 'Sparse_manager.cu','gpusolver.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
                 language='c++',
@@ -66,8 +66,8 @@ ext = Extension('gpusolver',
                                     'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
 
-extdn = Extension('gpusolver',
-                sources=['Solver_manager.cu', 'wrapper.pyx'],
+extdn = Extension('DnSolver',
+                sources=['initSI.cu', 'Solver_manager.cu', 'wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
                 language='c++',
@@ -75,7 +75,7 @@ extdn = Extension('gpusolver',
                 extra_compile_args={'gcc': ['-std=c++11', '-fopenmp'],
                                     'nvcc': ['-std=c++11', '-Xcompiler', '-fopenmp', '-arch=sm_61','--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], './cuda_inc'])
-extsp = Extension('gpusolver',
+extsp = Extension('SpSolver',
                 sources=['Sparse_manager.cu', 'sparse_wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
@@ -137,7 +137,7 @@ setup(name='gpusolver',
       author='Yunfan Zhang',
       version='0.1',
 
-      ext_modules = [ext],
+      ext_modules = [extdn, extsp],
 
       # inject our custom trigger
       cmdclass={'build_ext': custom_build_ext},

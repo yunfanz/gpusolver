@@ -1,5 +1,5 @@
 import numpy as np
-import gpusolver as gpusolver
+import SpSolver as gpusolver
 import itertools, time
 from scipy.sparse import csr_matrix, coo_matrix, csc_matrix
 import matplotlib.pyplot as plt 
@@ -187,7 +187,7 @@ def _HERA_plotsense_dict(file, NANTS=None, keep_non_red=False):
 
 if True:
 	# Radio astronomy bench from actual HERA antconfig file
-	version, nants = 350, 350
+	version, nants = 350, 320
 	FILE = "./HERA_antconfig/antenna_positions_{}.dat".format(version)
 	print "getting unique baselines"
 	ant_gps, bl_gps = _HERA_plotsense_dict(FILE, nants)

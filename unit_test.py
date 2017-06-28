@@ -1,5 +1,5 @@
 import numpy as np
-import gpusolver
+import DnSolver as gpusolver
 from scipy.sparse import csr_matrix
 
 

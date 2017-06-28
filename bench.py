@@ -1,5 +1,5 @@
 import numpy as np
-import gpusolverSp as gpusolver
+import DnSolver as gpusolver
 import itertools, time
 from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt 
