@@ -21,7 +21,7 @@ def reorder_matrix(matrix, symm=True):
 
 def reorder_matrix1(matrix, symm=True):
 
-    # reorder based on RCM from scipy.sparse.csgraph
+    # reverse order on RCM from scipy.sparse.csgraph
     new_matrix = csr_matrix(matrix)
     rcm_perm = reverse_cuthill_mckee(new_matrix, symm)
     new_matrix.indices = rcm_perm.take(new_matrix.indices)
@@ -143,6 +143,9 @@ if False:
 
 
 def _HERA_plotsense_dict(file, NANTS=None, keep_non_red=False):
+	"""
+	returns dictionaries of equivalency classes of baselines
+	"""
 	antpos = np.loadtxt(file)
 	if NANTS is None:
 		NANTS = antpos.shape[0]
@@ -192,10 +195,9 @@ if True:
 	print "getting unique baselines"
 	ant_gps, bl_gps = _HERA_plotsense_dict(FILE, nants)
 	nvis = len(bl_gps.keys())
-	ncols = nants+nvis
+	ncols = nants + nvis
 	nchan = 256
-
-
+	
 	T_transfer, T_compute, Asize = [], [], []
 	print "Preparing data"
 	nrows = nants*(nants-1)/2
@@ -229,18 +231,22 @@ if True:
 		print "numpy time {}".format(t1-t0)
 
 	#batches = np.array([16, 32, 64, 128, 256, 512])
-	batch = nchan
+	batch = nchan #number of batches to be fed to GPU
 
+	#stack all the data vectors together. SpSolver will figure out what is what
+	#here for testing purposes all data vectors are the same
 	dataA = np.hstack([AtAcsr.data for i in xrange(batch)])
 	datab = np.hstack([Atb for i in xrange(batch)])
 
 	print "got AtA with sparsity", 1 - float(AtAcsr.nnz)/(AtAcsr.shape[0]**2)
-	#import IPython; IPython.embed()
+
+
+	#### initialize GPU solver ####
 	solver = gpusolver.SpSolver(AtA.shape[0], AtA.shape[0], batch)
-	solver.prepare_workspace(AtAcsr.indptr, AtAcsr.indices)
+	solver.prepare_workspace(AtAcsr.indptr, AtAcsr.indices) #calculates optimal batch size from available memory
 	t0 = time.time()
-	solver.from_csr(dataA, datab)
-	t1 = time.time()
+	solver.from_csr(dataA, datab) # feed entire dataset, may be much larger than GPU memory
+	t1 = time.time()              #
 	#x = solver.solve_Axb_and_retrieve()
 	x = solver.solve_Axb_and_retrieve()[:AtA.shape[1]]
 	t2 = time.time()

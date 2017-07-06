@@ -28,6 +28,11 @@ Features to be added:
 1. Complex solver
 2. Batched transfer
 
+### Sparse branch
+
+Sparse branch contains a batched sparse solver. No multiplication is currently supported. Example usage see benchSp.py.
+
+
 ### General structure of usage:
 1. Initialize solver by calling ```solver = gpusolver.DnSolver(num_rows, num_cols)```
 2. Solve using either ```solver.solve(n) or solver.solve_Axb(n)```
