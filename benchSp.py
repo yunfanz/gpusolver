@@ -197,11 +197,10 @@ if True:
 	nvis = len(bl_gps.keys())
 	ncols = nants + nvis
 	nchan = 256
-	
-	T_transfer, T_compute, Asize = [], [], []
+
+	T_transfer, T_compute = [], []
 	print "Preparing data"
 	nrows = nants*(nants-1)/2
-	Asize.append(nrows*nants)
 	rows = np.repeat(np.arange(nrows), 3).astype(np.int32)
 	cols = np.zeros_like(rows)
 	data = np.ones_like(rows).astype(np.float32)
@@ -256,5 +255,4 @@ if True:
 	x = reorder_vector(x, rcm_perm, True)
 	#import IPython; IPython.embed()
 	print 'Relative Error', np.sum((np.asarray(np.dot(AtA, x))[0]-Atb_)**2)/np.sum(Atb**2)
-	print "compute per sample: ", np.array(T_compute)/batch
-	print "transfer per sample: ", T_transfer
+	print "compute+transfer per sample: ", np.array(T_compute)/batch
