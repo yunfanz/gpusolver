@@ -31,6 +31,14 @@ Features to be added:
 
 Sparse branch contains a batched sparse solver. No multiplication is currently supported. Example usage see benchSp.py.
 Input is reordered with the Reverse-Cuthill-Mckee algorithm and fed in batch into GPU, with optimal batchsize automatically determined from available GPU memory. 
+Benchmarks:
+HERA243: 1134 unique baselines, 0.0103 seconds per solve per gpu
+HERA350(core): 1501 unique baselines, 0.02 seconds per solve per gpu
+HERA350(full): 4376 unique baselines with non-trivial redundancy, 0.31 seconds per solve per gpu. 
+vs. numpy
+HERA243: 0.8 seconds/solve/cpu
+HERA350(core): 1.5 seconds/solve/cpu
+HERA350(full): 49 seconds/solve/cpu
 
 
 ### General structure of usage:
