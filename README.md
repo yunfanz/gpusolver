@@ -26,11 +26,11 @@ Current features include:
 
 Features to be added:
 1. Complex solver
-2. Batched transfer
 
 ### Sparse branch
 
 Sparse branch contains a batched sparse solver. No multiplication is currently supported. Example usage see benchSp.py.
+Input is reordered with the Reverse-Cuthill-Mckee algorithm and fed in batch into GPU, with optimal batchsize automatically determined from available GPU memory. 
 
 
 ### General structure of usage:
