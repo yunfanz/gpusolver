@@ -72,7 +72,7 @@ void DnSolver::solve() {
     start = second();
 
     checkCudaErrors(cusolverDnCheevd( cusolverH, jobz, uplo, n, d_A, lda, d_S, d_work, lwork, devInfo));
-    checkCudaErrors(cudaDeviceSynchronize());
+    //checkCudaErrors(cudaDeviceSynchronize());
     
     checkCudaErrors(cudaMemcpy(&h_info, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
 

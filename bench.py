@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	sig = np.load('/data1/KLT/train_snrm5/raw/0.npy')
 	print(sig.dtype, sig.size)
 	verify = False
-	corr_len = 2048
+	corr_len = 4096
 	start = time.time()
 	autocorr = fftconvolve(sig, np.conj(sig[::-1]))
 	autocorr = autocorr[len(autocorr)//2:len(autocorr)//2+corr_len]
@@ -27,7 +27,9 @@ if __name__ == "__main__":
 	solver = gpusolver.DnSolver(np.int32(corr_len))
 	t1 = time.time()
 	for i in xrange(10):
+		print(i)
 		solver.corr_from_vec(autocorr)
+		print(i)
 		solver.solve()
 	x = solver.retrieve()
 	t2 = time.time()
@@ -35,6 +37,6 @@ if __name__ == "__main__":
 		M = create_matrix(autocorr)
 		xnp = np.linalg.eigvals(M)
 	print('fftconvolve time {}'.format(t1-start))
-	print('solving time {}'.format(t2-t1))
+	print('solving time {}'.format((t2-t1)/10))
 	import IPython; IPython.embed()
 
