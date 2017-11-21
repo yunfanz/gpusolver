@@ -18,29 +18,30 @@
 #include <ctype.h>
 #include <math.h>
 #include <cuda_runtime.h>
-
+#include <complex>
+#include <cuComplex.h>
 #include "cusparse.h"
 
 #define SWITCH_CHAR             '-'
 
-void printMatrix(int m, int n, const float*A, int lda, const char* name) 
+void printMatrix(int m, int n,std::complex<float>*A, int lda, char* name) 
 {   
     printf("%s \n", name);
     for(int row = 0 ; row < m ; row++)
     {
         for(int col = 0 ; col < n ; col++)
         { 
-            float Areg = A[row + col*lda]; 
-            printf("%.3f ", Areg); 
+            std::complex<float> Areg = A[row + col*lda]; 
+            printf("%.3f + %.3f j ", real(Areg), imag(Areg)); 
             if (col == n-1) printf("\n") ;
         } 
     } 
 } 
-void checkMatrix(int m, int n, const float*A, int lda, const char* name)
+void checkMatrix(int m, int n, cuComplex *A, int lda, char* name)
 {
-    float* hA;
-    hA = (float*)malloc(sizeof(float)*m*n);
-    checkCudaErrors(cudaMemcpy(hA, A, sizeof(float)*m*n, cudaMemcpyDeviceToHost));
+    std::complex<float>* hA;
+    hA = (std::complex<float>*)malloc(sizeof(std::complex<float>)*m*n);
+    checkCudaErrors(cudaMemcpy(hA, A, sizeof(cuComplex)*m*n, cudaMemcpyDeviceToHost));
     printMatrix(m, n, hA, m, name);
     if (hA) free(hA);
 }

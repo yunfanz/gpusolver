@@ -3,46 +3,30 @@
 #include "cusparse.h"
 #include "cusolverDn.h"
 #include "helper_cuda.h"
-
-
+#include <cuComplex.h>
+#include <complex>
 class DnSolver{
 
 
-    cusolverDnHandle_t handle = NULL;
+    cusolverDnHandle_t cusolverH = NULL;
     cublasHandle_t cublasHandle = NULL; // used in residual evaluation
     cudaStream_t stream = NULL;
-    cusparseHandle_t cusparseHandle = 0;
-    cusparseMatDescr_t descrA = 0;
 
 
     int rowsA = 0; // number of rows of A
     int colsA = 0; // number of columns of A
-    int nnzA  = 0; // number of nonzeros of A
-    int baseA = 0; // base index in CSR format
+
     int lda   = 0; // leading dimension in dense matrix
 
-    // CSR(A) 
-    int *h_csrRowPtrA = NULL;
-    int *h_csrColIndA = NULL;
-    float *h_csrValA = NULL;
-    // // CSC(A) from I/O
-    int *d_csrRowPtrA = NULL;
-    int *d_csrColIndA = NULL;
-    float *d_csrValA = NULL;
 
-    float *h_A = NULL; // dense matrix from CSR(A)
-    float *h_x = NULL; // a copy of d_x
-    float *h_b = NULL; // b = ones(m,1)
-    // float *h_r = NULL; // r = b - A*x, a copy of d_r
-    // float *h_tr = NULL;
+    std::complex<float> *h_A = NULL; // correlation matrix
+    std::complex<float> *h_V = NULL; // correlation vector
+    float *h_S = NULL;//eigevalues
 
-    float *d_A = NULL; // a copy of h_A
-    float *d_x = NULL; // x = A \ b
-    float *d_b = NULL; // a copy of h_b
-    // float *d_r = NULL; // r = b - A*x
-    // float *d_tr = NULL; // tr = Atb - AtA*x
-    //float* dAtA = NULL;
-    //float* d_Atb = NULL;
+    cuComplex *d_A = NULL; // correlation matrix
+    cuComplex *d_V = NULL; // correlation vector
+    float *d_S = NULL; //eigevalues
+
 
     // the constants are used in residual evaluation, r = b - A*x
     const float minus_one = -1.0;
@@ -51,31 +35,27 @@ class DnSolver{
     const float al = 1.0;// al =1
     const float bet = 0.0;// bet =0
 
-    // float x_inf = 0.0;
-    // float r_inf = 0.0;
-    // float A_inf = 0.0;
-    // float b_inf = 0.0;
-    // float Ax_inf = 0.0;
-    // float tr_inf = 0.0;
     int errors = 0;
+    int *devInfo = NULL; 
+    cuComplex *d_work = NULL; 
+    int lwork = 0; 
+
+    cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_NOVECTOR;
+    cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER; 
 
 
 public:
 
 
-  DnSolver (int rows_, int cols_) ; // constructor (copies to GPU)
+  DnSolver (int rows_) ; // constructor
 
   ~DnSolver(); // destructor
 
-  void from_dense(float* array_host_, float* rhs_);
+  void corr_from_vec(std::complex<float>* vec_host_);
 
-  void from_csr(int* indptr_, int* indices_, float* data_, float* rhs_);
-
-  void solve(int func); // AtA solver for non-square matrices
-  void solve_Axb(int func); // for square matrices, only use qr or lu if non-symmetric
-
+  void solve(); 
   //gets results back from the gpu, putting them in the supplied memory location
-  void retrieve_to (float* h_x);
+  void retrieve_to (float* h_S);
 
 
 };

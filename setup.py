@@ -57,7 +57,7 @@ except AttributeError:
 
 #import IPython; IPython.embed()
 ext = Extension('gpusolver',
-                sources=['initSI.cu', 'Solver_manager.cu', 'wrapper.pyx'],
+                sources=['Solver_manager.cu', 'wrapper.pyx'],
                 library_dirs=[CUDA['lib64'], '/usr/lib/'],
                 libraries=['cudart', 'cusolver', 'cublas', 'cusparse', 'gomp'],
                 language='c++',
